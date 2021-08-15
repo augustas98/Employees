@@ -1,4 +1,5 @@
 using Employees.DataAccess;
+using Employees.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,7 @@ namespace Employees
         {
             services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlite(Configuration.GetConnectionString("connection")));
+            services.AddScoped<IEmployeeService, EmployeeService>();
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

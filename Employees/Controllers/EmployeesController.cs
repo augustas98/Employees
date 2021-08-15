@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Employees.DataAccess;
 using Employees.Models;
-using Employees.Validators;
 using FluentValidation.Results;
+using Employees.Services;
 
 namespace Employees.Controllers
 {
@@ -15,30 +14,25 @@ namespace Employees.Controllers
     [ApiController]
     public class EmployeesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-
         private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly IEmployeeService _employeeService;
+        public const string ceoRole = "CEO";
 
-        public EmployeesController(ApplicationDbContext context)
+        public EmployeesController(IEmployeeService employeeService)
         {
-            _context = context;
+            _employeeService = employeeService;
         }
 
-        // GET: api/Employees
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Employee>>> GetEmployees(int? bossId = null, string firstName = null, DateTime? birthDate1 = null, DateTime? birthDate2 = null)
+        public async Task<ActionResult<IEnumerable<Employee>>> GetEmployees(int? bossId = null, string firstName = null, DateTime? birthDateFrom = null, DateTime? birthDateTo = null)
         {
-            return await _context.Employee
-                .Where(e => bossId.HasValue ? e.Boss == bossId : true &&
-                    !string.IsNullOrWhiteSpace(firstName) ? e.FirstName.Contains(firstName) : true &&
-                    (birthDate1.HasValue && birthDate2.HasValue) ? (e.BirthDate > birthDate1 && e.BirthDate < birthDate2) : true).ToListAsync();
+            return await _employeeService.GetEmployees(bossId, firstName, birthDateFrom, birthDateTo);
         }
 
-        // GET: api/Employees/5
         [HttpGet("employeeId/{id}")]
         public async Task<ActionResult<Employee>> GetEmployeeById(int id)
         {
-            var employee = await _context.Employee.FindAsync(id);
+            var employee = await _employeeService.FindEmployee(id);
 
             if (employee == null)
             {
@@ -48,176 +42,128 @@ namespace Employees.Controllers
             return employee;
         }
 
-        // GET: api/Employees/5
         [HttpGet("role/{role}")]
-        public async Task<ActionResult<object>> GetEmployeeCountAndAverageSalaryByRole(string role)
+        public async Task<ActionResult<EmployeeCountAndSalary>> GetEmployeeCountAndAverageSalaryByRole(string role)
         {
-            try
+            if (string.IsNullOrWhiteSpace(role))
             {
-                if (string.IsNullOrWhiteSpace(role))
-                {
-                    return BadRequest();
-                }
-
-                var query = await (from employee in _context.Employee
-                                   where employee.Role == role
-                                   group employee by 1 into grp
-                                   select new
-                                   {
-                                       employeeCount = grp.Count(),
-                                       averageSalary = Convert.ToInt32(grp.Sum(e => e.CurrentSalary)) / grp.Count()
-                                   }).FirstAsync();
-
-                if (query == null)
-                {
-                    return NotFound();
-                }
-
-                return query;
-            }
-            catch (DivideByZeroException ex)
-            {
-                log.Error("Dividing by zero is not allowed", ex);
                 return BadRequest();
             }
+
+             return await _employeeService.GetEmployeeCountAndAverageSalaryByRole(role);
         }
 
-        // PUT: api/Employees/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutEmployee(int id, Employee employee)
+        public async Task<IActionResult> PutEmployee(int id, EmployeeUpdate employee)
         {
-            if (id != employee.Id)
-            {
-                return BadRequest();
-            }
-
-            try
-            {
-                EmployeeValidator validator = new EmployeeValidator();
-                ValidationResult result = validator.Validate(employee);
-
-                if (result.IsValid)
-                {
-                    _context.Entry(employee).State = EntityState.Modified;
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    return BadRequest(result.ToString(Environment.NewLine));
-                }
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!EmployeeExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // PUT: api/Employees/6
-        [HttpPut("employeeId/{id}")]
-        // salary det i body, kad neexposint parametro.
-        public async Task<IActionResult> PutEmployeeSalary(int id, Employee employee)
-        {
-            if (employee.CurrentSalary < 0)
-            {
-                return BadRequest();
-            }
-
-            var employeeInDb = await _context.Employee.FindAsync(id);
+            var employeeInDb = await _employeeService.FindEmployee(id);
 
             if (employeeInDb == null)
             {
                 return NotFound();
             }
 
-            employeeInDb.CurrentSalary = employee.CurrentSalary;
-
-            EmployeeValidator validator = new EmployeeValidator();
-            ValidationResult result = validator.Validate(employeeInDb);
-
             try
             {
-                if (result.IsValid)
-                {
-                    await _context.SaveChangesAsync();
-                }
-                else
+                _employeeService.EmployeeSetValues(employeeInDb, employee);
+
+                ValidationResult result = _employeeService.GetEmployeeValidationResult(employeeInDb);
+
+                if (!result.IsValid)
                 {
                     return BadRequest(result.ToString(Environment.NewLine));
                 }
+
+                await _employeeService.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!EmployeeExists(id))
+                if (!_employeeService.EmployeeExists(id))
                 {
                     return NotFound();
-                }
-                else
-                {
-                    throw;
                 }
             }
 
             return NoContent();
         }
 
-        // POST: api/Employees
-        [HttpPost]
-        public async Task<ActionResult<Employee>> PostEmployee(Employee employee)
+        [HttpPut("{id}/salary")]
+        public async Task<IActionResult> PutEmployeeSalary(int id, EmployeeSalary salary)
         {
+            if (salary.CurrentSalary < 0)
+            {
+                return BadRequest();
+            }
+
+            var employeeInDb = await _employeeService.FindEmployee(id);
+
+            if (employeeInDb == null)
+            {
+                return NotFound();
+            }
+
+            employeeInDb.CurrentSalary = salary.CurrentSalary;
+
+            ValidationResult result = _employeeService.GetEmployeeValidationResult(employeeInDb);
+
             try
             {
-                EmployeeValidator validator = new EmployeeValidator();
-                ValidationResult result = validator.Validate(employee);
-
-                if (result.IsValid)
-                {
-                    _context.Employee.Add(employee);
-                    await _context.SaveChangesAsync();
-                }
-                else
+                if (!result.IsValid)
                 {
                     return BadRequest(result.ToString(Environment.NewLine));
                 }
 
+                await _employeeService.SaveChangesAsync();
             }
-            catch (DbUpdateException ex)
+            catch (DbUpdateConcurrencyException)
             {
-                log.Error("Employee rule violation", ex);
-                return BadRequest("Employee rule violation: there can only be one CEO");
+                if (!_employeeService.EmployeeExists(id))
+                {
+                    return NotFound();
+                }
             }
 
-            return CreatedAtAction("GetEmployee", new { id = employee.Id }, employee);
+            return NoContent();
         }
 
-        // DELETE: api/Employees/5
+        [HttpPost]
+        public async Task<ActionResult<Employee>> PostEmployee(Employee employee)
+        {
+            var firstExistingEmployeeByRole = await _employeeService.GetFirstEmployeeByRole(ceoRole);
+
+            if (firstExistingEmployeeByRole != null && employee.Role == ceoRole)
+            {
+                return Conflict("Employee rule violation: there can only be one CEO");
+            }
+
+            ValidationResult result = _employeeService.GetEmployeeValidationResult(employee);
+
+            if (!result.IsValid)
+            {
+                return BadRequest(result.ToString(Environment.NewLine));
+            }
+
+            employee.Id = 0;
+            _employeeService.AddEmployee(employee);
+            await _employeeService.SaveChangesAsync();
+
+            return CreatedAtAction("GetEmployeeById", new { id = employee.Id }, employee);
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEmployee(int id)
         {
-            var employee = await _context.Employee.FindAsync(id);
+            var employee = await _employeeService.FindEmployee(id);
 
             if (employee == null)
             {
                 return NotFound();
             }
 
-            _context.Employee.Remove(employee);
-            await _context.SaveChangesAsync();
+            _employeeService.RemoveEmployee(employee);
+            await _employeeService.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool EmployeeExists(int id)
-        {
-            return _context.Employee.Any(e => e.Id == id);
         }
     }
 }

@@ -3,11 +3,8 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Employees.Models
 {
-    public class Employee
+    public class EmployeeUpdate
     {
-        [Key]
-        [Required]
-        public int Id { get; set; }
 
         [StringLength(50, ErrorMessage = "Must be under 50 characters")]
         [Required(ErrorMessage = "FirstName is required")]
@@ -35,13 +32,5 @@ namespace Employees.Models
         [Required(ErrorMessage = "Role is required")]
         public string Role { get; set; }
 
-        public static int GetAgeByDateTime(DateTime birthDate)
-        {
-            DateTime today = DateTime.Today;
-            int age = today.Year - birthDate.Year;
-            if (birthDate.Date > today.AddYears(-age)) age--;
-
-            return age;
-        }
     }
 }

@@ -1,6 +1,5 @@
-﻿using System;
+﻿using Employees.Models;
 using System.Data.Entity;
-using Employees.Models;
 
 namespace Employees.Test
 {
@@ -8,10 +7,10 @@ namespace Employees.Test
     {
         public TestEmployeeContext()
         {
-            this.Employees = new TestEmployeeDbSet();
+            this.Employee = new TestEmployeeDbSet();
         }
 
-        public DbSet<Employee> Employees { get; set; }
+        public DbSet<Employee> Employee { get; set; }
 
         public int SaveChanges()
         {
