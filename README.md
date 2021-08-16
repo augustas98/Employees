@@ -6,7 +6,7 @@ https://dotnet.microsoft.com/download/dotnet/5.0
 Before running the API for the first time, please do:
 
 1. edit the log4net.config.
-<file value="\repos\Employees\Employees\Logs\log-" />
+"<file value="\repos\Employees\Employees\Logs\log-" />"
 It should have an absolute path.
 
 
