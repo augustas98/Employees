@@ -19,7 +19,7 @@ namespace Employees.Tests
             mock.Setup(p => p.GetEmployees(null, null, null, null)).ReturnsAsync(GetTestEmployees());
             EmployeesController emp = new EmployeesController(mock.Object);
             ActionResult<IEnumerable<Employee>> result = await emp.GetEmployees(null, null, null, null);
-            Assert.Equal(GetTestEmployees(), (result.Result as CreatedAtActionResult).Value);
+            Assert.Equal(GetTestEmployees(), result.Value);
         }
 
         [Fact]
@@ -29,6 +29,15 @@ namespace Employees.Tests
             EmployeesController emp = new EmployeesController(mock.Object);
             ActionResult<Employee> result = await emp.GetEmployeeById(1);
             Assert.Equal(GetEmployee(), result.Value);
+        }
+
+        [Fact]
+        public async void GetEmployeeCountAndAverageSalaryByRole()
+        {
+            mock.Setup(p => p.GetEmployeeCountAndAverageSalaryByRole("Employee")).ReturnsAsync(GetCountAndSalary());
+            EmployeesController emp = new EmployeesController(mock.Object);
+            ActionResult<EmployeeCountAndSalary> result = await emp.GetEmployeeCountAndAverageSalaryByRole("Employee");
+            Assert.Equal(GetCountAndSalary(), result.Value);
         }
 
         private List<Employee> GetTestEmployees()
@@ -54,6 +63,17 @@ namespace Employees.Tests
             };
 
             return testEmployee;
+        }
+
+        private EmployeeCountAndSalary GetCountAndSalary()
+        {
+            var countAndSalary = new EmployeeCountAndSalary
+            { 
+                Count = 15,
+                Salary = 245355
+            };
+
+            return countAndSalary;
         }
 
     }

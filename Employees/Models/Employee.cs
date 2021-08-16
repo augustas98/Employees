@@ -35,6 +35,32 @@ namespace Employees.Models
         [Required(ErrorMessage = "Role is required")]
         public string Role { get; set; }
 
+        public override bool Equals(object obj)
+        {
+            var employee = obj as Employee;
+
+            if (employee == null)
+            {
+                return false;
+            }
+
+            return (FirstName == employee.FirstName)
+                && (LastName == employee.LastName)
+                && (BirthDate == employee.BirthDate)
+                && (EmploymentDate == employee.EmploymentDate)
+                && (Boss == employee.Boss)
+                && (HomeAddress == employee.HomeAddress)
+                && (CurrentSalary == employee.CurrentSalary)
+                && (Role == employee.Role);
+        }
+
+        public override int GetHashCode()
+        {
+            return FirstName.GetHashCode() ^ LastName.GetHashCode() ^ BirthDate.GetHashCode()
+                ^ EmploymentDate.GetHashCode() ^ Boss.GetHashCode() ^ HomeAddress.GetHashCode()
+                ^ CurrentSalary.GetHashCode() ^ Role.GetHashCode();
+        }
+
         public static int GetAgeByDateTime(DateTime birthDate)
         {
             DateTime today = DateTime.Today;

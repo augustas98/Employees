@@ -40,10 +40,10 @@ namespace Employees.Services
 
             var employeeByRole = await _context.Employee.Where(e => e.Role.Contains(role)).FirstOrDefaultAsync();
 
-            if (employeeByRole == null)
-            {
-                return countAndSalary;
-            }
+            //if (employeeByRole == null)
+            //{
+            //    return countAndSalary;
+            //}
 
             var query = await (from employee in _context.Employee
                                where employee.Role.Contains(role)
