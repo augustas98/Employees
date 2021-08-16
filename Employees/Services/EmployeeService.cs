@@ -28,10 +28,11 @@ namespace Employees.Services
 
         public async Task<ActionResult<IEnumerable<Employee>>> GetEmployees(int? bossId = null, string firstName = null, DateTime? birthDateFrom = null, DateTime? birthDateTo = null)
         {
-            return await _context.Employee
-                .Where(e => bossId.HasValue ? e.Boss == bossId : true &&
-                    (!string.IsNullOrWhiteSpace(firstName) && birthDateFrom.HasValue && birthDateTo.HasValue)                 
-                    ? (e.FirstName.Contains(firstName) && e.BirthDate > birthDateFrom && e.BirthDate < birthDateTo) : true).ToListAsync();
+            return await _context.Employee.Where(
+                e => (bossId == null || e.Boss == bossId) &&
+                (firstName == null || e.FirstName.Contains(firstName)) &&
+                (birthDateFrom == null || e.BirthDate > birthDateFrom) &&
+                (birthDateTo == null || e.BirthDate < birthDateTo)).ToListAsync();
         }
 
         public async Task<EmployeeCountAndSalary> GetEmployeeCountAndAverageSalaryByRole(string role)

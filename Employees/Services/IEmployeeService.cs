@@ -19,6 +19,5 @@ namespace Employees.Services
         void EmployeeSetValues(Employee employeeInDb, EmployeeUpdate employee);
         void RemoveEmployee(Employee employee);
         public bool EmployeeExists(int id);
-
     }
 }
