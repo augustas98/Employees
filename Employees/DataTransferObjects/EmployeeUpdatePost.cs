@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Employees.Models
 {
-    public class EmployeeUpdate
+    public class EmployeeUpdatePost
     {
 
         [StringLength(50, ErrorMessage = "Must be under 50 characters")]
@@ -30,7 +30,7 @@ namespace Employees.Models
         public long CurrentSalary { get; set; }
 
         [Required(ErrorMessage = "Role is required")]
-        public string Role { get; set; }
+        public int Role { get; set; }
 
     }
 }

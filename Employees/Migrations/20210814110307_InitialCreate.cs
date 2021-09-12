@@ -20,7 +20,7 @@ namespace Employees.Migrations
                     Boss = table.Column<int>(type: "INTEGER", nullable: true),
                     HomeAddress = table.Column<string>(type: "TEXT", nullable: false),
                     CurrentSalary = table.Column<long>(type: "INTEGER", nullable: false),
-                    Role = table.Column<string>(type: "TEXT COLLATE NOCASE", nullable: false)
+                    Role = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -29,7 +29,7 @@ namespace Employees.Migrations
 
             migrationBuilder.Sql(@"CREATE UNIQUE INDEX
              [IX_OneCeoRule] ON [Employee] ([Role])
-             WHERE ([Role] = ('CEO'))");
+             WHERE ([Role] = (1))");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

@@ -33,7 +33,7 @@ namespace Employees.Models
         public long CurrentSalary { get; set; }
 
         [Required(ErrorMessage = "Role is required")]
-        public string Role { get; set; }
+        public EmployeeRole Role { get; set; }
 
         public override bool Equals(object obj)
         {
@@ -69,5 +69,12 @@ namespace Employees.Models
 
             return age;
         }
+
+        public enum EmployeeRole
+        {
+            Employee,
+            Ceo
+        }
+
     }
 }

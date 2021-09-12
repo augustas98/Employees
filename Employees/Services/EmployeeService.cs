@@ -35,19 +35,12 @@ namespace Employees.Services
                 (birthDateTo == null || e.BirthDate < birthDateTo)).ToListAsync();
         }
 
-        public async Task<EmployeeCountAndSalary> GetEmployeeCountAndAverageSalaryByRole(string role)
+        public async Task<EmployeeCountAndSalary> GetEmployeeCountAndAverageSalaryByRole(int role)
         {
             EmployeeCountAndSalary countAndSalary = new EmployeeCountAndSalary { };
 
-            var employeeByRole = await _context.Employee.Where(e => e.Role.Contains(role)).FirstOrDefaultAsync();
-
-            if (employeeByRole == null)
-            {
-                return countAndSalary;
-            }
-
             var query = await (from employee in _context.Employee
-                               where employee.Role.Contains(role)
+                               where employee.Role.Equals(role)
                                group employee by 1 into grp
                                select new
                                {
@@ -66,9 +59,9 @@ namespace Employees.Services
             return _validator.Validate(employee);
         }
 
-        public async Task<Employee> GetFirstEmployeeByRole(string role)
+        public async Task<Employee> GetFirstEmployeeByRole(int role)
         {
-            return await _context.Employee.Where(e => e.Role.Contains(role)).FirstOrDefaultAsync();
+            return await _context.Employee.Where(e => e.Role.Equals(role)).FirstOrDefaultAsync();
         }
 
         public async Task SaveChangesAsync()
@@ -81,7 +74,7 @@ namespace Employees.Services
             _context.Employee.Add(employee);
         }
 
-        public void EmployeeSetValues(Employee employeeInDb, EmployeeUpdate employee)
+        public void EmployeeSetValues(Employee employeeInDb, EmployeeUpdatePost employee)
         {
             _context.Entry(employeeInDb).CurrentValues.SetValues(employee);
         }
@@ -94,6 +87,24 @@ namespace Employees.Services
         public bool EmployeeExists(int id)
         {
             return _context.Employee.Any(e => e.Id == id);
+        }
+
+        public Employee CreateNewEmployee(EmployeeUpdatePost employee)
+        {
+            Employee newEmployee = new Employee
+            {
+                Id = 0,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                BirthDate = employee.BirthDate,
+                EmploymentDate = employee.EmploymentDate,
+                Boss = employee.Boss,
+                HomeAddress = employee.HomeAddress,
+                CurrentSalary = employee.CurrentSalary,
+                Role = (Employee.EmployeeRole)employee.Role
+            };
+
+            return newEmployee;
         }
     }
 }

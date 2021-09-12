@@ -6,7 +6,7 @@ namespace Employees.Validators
 {
     public class EmployeeValidator : AbstractValidator<Employee>
     {
-        public const string role = "CEO";
+        public const int role = 1;
 
         public EmployeeValidator()
         {
@@ -25,7 +25,7 @@ namespace Employees.Validators
 
             RuleFor(employee => employee.EmploymentDate).LessThan(DateTime.Now);
 
-            RuleFor(employee => employee.Boss).Null().When(employee => employee.Role == role);
+            RuleFor(employee => employee.Boss).Null().When(employee => employee.Role.Equals(role));
 
             RuleFor(employee => employee.CurrentSalary).GreaterThanOrEqualTo(0).NotNull();
         }

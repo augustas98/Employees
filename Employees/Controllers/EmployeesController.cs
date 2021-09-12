@@ -15,7 +15,7 @@ namespace Employees.Controllers
     {
         private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
         private readonly IEmployeeService _employeeService;
-        public const string ceoRole = "CEO";
+        private const int ceoRole = 1;
 
         public EmployeesController(IEmployeeService employeeService)
         {
@@ -42,18 +42,13 @@ namespace Employees.Controllers
         }
 
         [HttpGet("role/{role}")]
-        public async Task<ActionResult<EmployeeCountAndSalary>> GetEmployeeCountAndAverageSalaryByRole(string role)
+        public async Task<ActionResult<EmployeeCountAndSalary>> GetEmployeeCountAndAverageSalaryByRole(int role)
         {
-            if (string.IsNullOrWhiteSpace(role))
-            {
-                return BadRequest();
-            }
-
              return await _employeeService.GetEmployeeCountAndAverageSalaryByRole(role);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutEmployee(int id, EmployeeUpdate employee)
+        public async Task<IActionResult> PutEmployee(int id, EmployeeUpdatePost employee)
         {
             var employeeInDb = await _employeeService.FindEmployee(id);
 
@@ -126,27 +121,27 @@ namespace Employees.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<Employee>> PostEmployee(Employee employee)
+        public async Task<ActionResult<Employee>> PostEmployee(EmployeeUpdatePost employee)
         {
-            var firstExistingEmployeeByRole = await _employeeService.GetFirstEmployeeByRole(ceoRole);
+            var firstExistingEmployeeByRole = await _employeeService.GetFirstEmployeeByRole(employee.Role);
 
-            if (firstExistingEmployeeByRole != null && employee.Role == ceoRole)
+            if (firstExistingEmployeeByRole != null && employee.Role.Equals(ceoRole))
             {
                 return Conflict("Employee rule violation: there can only be one CEO");
             }
 
-            ValidationResult result = _employeeService.GetEmployeeValidationResult(employee);
+            var newEmployee = _employeeService.CreateNewEmployee(employee);
+            ValidationResult result = _employeeService.GetEmployeeValidationResult(newEmployee);
 
             if (!result.IsValid)
             {
                 return BadRequest(result.ToString(Environment.NewLine));
             }
 
-            employee.Id = 0;
-            _employeeService.AddEmployee(employee);
+            _employeeService.AddEmployee(newEmployee);
             await _employeeService.SaveChangesAsync();
 
-            return CreatedAtAction("GetEmployeeById", new { id = employee.Id }, employee);
+            return CreatedAtAction("GetEmployeeById", new { id = newEmployee.Id }, newEmployee);
         }
 
         [HttpDelete("{id}")]
